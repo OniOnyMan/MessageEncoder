@@ -18,7 +18,7 @@ namespace MessageEncoder.Applications
         // обратите внимание, что ЯВНО с точкой
         private static readonly string OutputFileExtension = @".txt";
 
-        // в Центре ПО ВСК доступен Skype 8.94.0.428 
+        // ограничение длины сообщений в Skype 8.94.0.428 
         private static readonly int SkypeMessageLength = 25000;
 
         // установить false, если нужно одним файлом
@@ -102,13 +102,5 @@ namespace MessageEncoder.Applications
             }
 
         }
-
-        // https://stackoverflow.com/questions/323640/can-i-convert-a-c-sharp-string-value-to-an-escaped-string-literal
-        // https://stackoverflow.com/a/58825732
-        //static string ToLiteral(IEnumerable<byte> partition)
-        //{
-        //    string valueTextForCompiler = Encoding.UTF8.GetString(partition.ToArray());
-        //    return Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(valueTextForCompiler, false);
-        //} 
     }
 }
