@@ -2,14 +2,17 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
+
 using MessageEncoder.Contracts;
 
 namespace MessageEncoder.Applications
 {
     public class TextToFile : IApplication
     {
-        private static readonly string InputRootPath = @"D:\Downloads\MessageEncoder\encoded [2023-10-14 04-40-04]";
+        //private static readonly string InputRootPath = @"D:\Downloads\MessageEncoder\encoded [2023-10-14 08-56-01]";
+        private static readonly string InputRootPath = @"D:\Downloads\MessageEncoder\splited [2023-10-14 13-37-37]";
+        private static readonly string InputFilePattern = @"";
 
         private static readonly string OutputRootPath = @"D:\Downloads\MessageEncoder\";
 
@@ -21,26 +24,81 @@ namespace MessageEncoder.Applications
 
         public void Run(string[] args)
         {
-            var execTime = DateTime.Now;
-            string outputPath = Path.Combine(OutputRootPath, $"decoded [{execTime:yyyy-MM-dd HH-mm-ss}]{OutputFileExtension}");
-
-            using FileStream stream = File.Create(outputPath);
-            foreach (byte item in ReadInputFiles())
+            if (string.IsNullOrWhiteSpace(InputRootPath)
+                || !Directory.Exists(InputRootPath))
             {
-                stream.WriteByte(item);
+                Logger.LogError($"Configuration.{nameof(InputRootPath)}: Invalid folder name");
+                return;
             }
 
-            Console.WriteLine($"Decoded file has beed saved in \n\t{outputPath}");
+            var inputFiles = Directory
+                .GetFiles(InputRootPath)
+                .Where(x => string.IsNullOrWhiteSpace(InputFilePattern)
+                    || Regex.IsMatch(x, InputFilePattern));
+
+            if (inputFiles.Any() == false) 
+            {
+                Logger.LogError($"Configuration.{nameof(InputFilePattern)}: No files found in folder \n\t{InputRootPath}");
+                return;
+            }
+
+            if (!Directory.Exists(OutputRootPath))
+            {
+                Directory.CreateDirectory(OutputRootPath);
+            }
+
+            DecodeText(inputFiles);
+        }
+
+        private bool DecodeText(IEnumerable<string> inputFilesNames)
+        {
+            try
+            {
+                var execTime = DateTime.Now;
+                Log($"Execution started at [{execTime:HH:mm:ss}]");
+
+                string outputFilePath = Path.Combine(OutputRootPath, $"decoded [{execTime:yyyy-MM-dd HH-mm-ss}]{OutputFileExtension}");
+                using FileStream stream = File.Create(outputFilePath);
+
+                foreach (byte item in ReadFiles(inputFilesNames))
+                {
+                    stream.WriteByte(item);
+                }
+                Log($"Decoded file has beed saved in \n\t{outputFilePath}\n");
+
+                var endTime = DateTime.Now;
+                var timeElapsed = endTime - execTime;
+                Log($"Execution completed at [{endTime:HH:mm:ss}]");
+                Log($"Time elapsed [{timeElapsed.TotalSeconds:0.###}] seconds\n");
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"{e.Message}\nStackTrace: {e.StackTrace}");
+                return false;
+            }
         }
 
         // шизофрения...
         // при работе соединяет последовательность byte из разных файлов
         // как-будто это один поток
-        private IEnumerable<byte> ReadInputFiles()
+        private IEnumerable<byte> ReadFiles(IEnumerable<string> filesNames)
         {
-            var buffer = new List<int>();
-            string[] fileNames = Directory.GetFiles(InputRootPath);
+            var orderedFilesNames = filesNames.OrderBy(x =>
+            {
+                int endIndex = x.LastIndexOf('.');
+                int startIndex = x.LastIndexOf('\\') + 1;
+                string substring = string.IsNullOrWhiteSpace(InputFilePattern)
+                    ? x[startIndex..endIndex] // автоупрощение .Substring
+                    : x[startIndex..endIndex]
+                        .Replace(InputFilePattern, null, StringComparison.InvariantCultureIgnoreCase);
 
+                int.TryParse(substring, out int result);
+                return result;
+            });
+
+            var buffer = new List<int>();
             byte parseBuffer()
             {
                 var batchString = new string(buffer.Select(x => (char)x).ToArray());
@@ -49,9 +107,9 @@ namespace MessageEncoder.Applications
                 return byteResult;
             }
 
-            for (int i = 0; i < fileNames.Length; i++)
+            foreach (var fileName in orderedFilesNames)            
             {
-                using var reader = new StreamReader(fileNames[i]);
+                using var reader = new StreamReader(fileName);
                 while (!reader.EndOfStream)
                 {
                     int charCode = reader.Read();
@@ -69,8 +127,13 @@ namespace MessageEncoder.Applications
 
             // остатки сладки
             // необходимо вернуть последний byte,
-            // который застревает в EndOfStream
+            // который застревает в буфере при EndOfStream
             yield return parseBuffer();
+        }
+
+        private void Log(string message)
+        {
+            Logger.Log(message, nameof(TextToFile));
         }
     }
 }
