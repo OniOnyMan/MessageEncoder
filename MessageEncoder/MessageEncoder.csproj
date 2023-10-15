@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <StartupObject>MessageEncoder.Program</StartupObject>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
 </Project>

@@ -1,11 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace MessageEncoder
 {
     internal static class Logger
     {
+        private const ConsoleColor DefaultForegroundColor = ConsoleColor.Gray;
+
+        public class LoggerMessage
+        {
+            public string Message { get; set; }
+            public string Header { get; set; }
+            public ConsoleColor HeaderColor { get; set; } = ConsoleColor.DarkYellow;
+        }
+
+        private static ConcurrentQueue<LoggerMessage> _messagesQueue = new ();
+        private static bool _isWorking = false;
+
         static Logger() 
         {
             Console.ResetColor();
@@ -13,33 +25,71 @@ namespace MessageEncoder
 
         public static void Log(string message, string header = null)
         {
-            if (!string.IsNullOrWhiteSpace(header))
+            AddRecord(new LoggerMessage 
             {
-                PrintHeader(header);
-            }
-
-            Console.WriteLine(message);
+                Message = message,
+                Header = header,
+                HeaderColor = ConsoleColor.DarkYellow,
+            });
         }
 
         public static void LogError(string message, string header = "Error")
         {
-            PrintHeader(header, ConsoleColor.Red);
-            Console.WriteLine(message);
+            AddRecord(new LoggerMessage
+            {
+                Message = message,
+                Header = header,
+                HeaderColor = ConsoleColor.Red,
+            });
         }
 
         public static void LogWarning(string message, string header = "Warning")
         {
-            PrintHeader(header, ConsoleColor.Yellow);
-            Console.WriteLine(message);
+            AddRecord(new LoggerMessage
+            {
+                Message = message,
+                Header = header,
+                HeaderColor = ConsoleColor.Yellow,
+            });
         }
 
-        private static void PrintHeader(string header, ConsoleColor color = ConsoleColor.DarkYellow)
+        public static void TurnOff()
         {
-            Console.Write("[");
-            Console.ForegroundColor = color;
-            Console.Write(header);
-            Console.ForegroundColor = ConsoleColor.Gray;
-            Console.Write("]: ");
+            _isWorking = false;
+        }
+
+        public static Task TurnOn()
+        {
+            _isWorking = true;
+            return Task.Run(() => 
+            {
+                while (_isWorking || _messagesQueue.TryPeek(out _))
+                {
+                    if (_messagesQueue.TryDequeue(out LoggerMessage record))
+                    {
+                        PrintRecord(record);
+                    }
+                }
+            });
+        }
+
+        private static void PrintRecord(LoggerMessage record)
+        {
+            if (!string.IsNullOrWhiteSpace(record.Header))
+            {
+                Console.Write("[");
+                Console.ForegroundColor = record.HeaderColor;
+                Console.Write(record.Header);
+                Console.ForegroundColor = DefaultForegroundColor;
+                Console.Write("]: ");
+            }
+
+            Console.WriteLine(record.Message);
+        }
+
+        private static void AddRecord(LoggerMessage message)
+        {
+            _messagesQueue.Enqueue(message);
         }
     }
 }
