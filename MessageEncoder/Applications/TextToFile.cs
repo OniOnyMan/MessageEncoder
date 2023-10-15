@@ -14,13 +14,25 @@ namespace MessageEncoder.Applications
         private static readonly string InputRootPath = @"D:\Downloads\MessageEncoder\splited [2023-10-14 13-37-37]";
         private static readonly string InputFilePattern = @"";
 
-        private static readonly string OutputRootPath = @"D:\Downloads\MessageEncoder\";
+        private static readonly string OutputRootPath = @"E:\Downloads\MessageEncoder\";
 
         // обратите внимание, что ЯВНО с точкой
         private static readonly string OutputFileExtension = @".exe";
         //private static readonly string OutputFileExtension = @".msi";
 
         private static readonly int ByteSeparatorCode = ' '; // пробел
+
+        public string Name { get; private set; } = string.Empty;
+
+        public TextToFile()
+        {
+
+        }
+
+        public TextToFile(string name)
+        {
+            Name = name;
+        }
 
         public void Run(string[] args)
         {
@@ -57,19 +69,19 @@ namespace MessageEncoder.Applications
                 var execTime = DateTime.Now;
                 Log($"Execution started at [{execTime:HH:mm:ss}]");
 
-                string outputFilePath = Path.Combine(OutputRootPath, $"decoded [{execTime:yyyy-MM-dd HH-mm-ss}]{OutputFileExtension}");
+                string outputFilePath = Path.Combine(OutputRootPath, $"decoded{Name} [{execTime:yyyy-MM-dd HH-mm-ss}]{OutputFileExtension}");
                 using FileStream stream = File.Create(outputFilePath);
 
                 foreach (byte item in ReadFiles(inputFilesNames))
                 {
                     stream.WriteByte(item);
                 }
-                Log($"Decoded file has beed saved in \n\t{outputFilePath}\n");
+                Log($"Decoded file has beed saved in \n\t{outputFilePath}");
 
                 var endTime = DateTime.Now;
                 var timeElapsed = endTime - execTime;
                 Log($"Execution completed at [{endTime:HH:mm:ss}]");
-                Log($"Time elapsed [{timeElapsed.TotalSeconds:0.###}] seconds\n");
+                Log($"Time elapsed [{timeElapsed.TotalSeconds:0.###}] seconds");
 
                 return true;
             }
@@ -133,7 +145,10 @@ namespace MessageEncoder.Applications
 
         private void Log(string message)
         {
-            Logger.Log(message, nameof(TextToFile));
+            Logger.Log(message, 
+                string.IsNullOrWhiteSpace(Name)
+                ? nameof(TextToFile)
+                : $"{Name}_{nameof(TextToFile)}");
         }
     }
 }
