@@ -4,6 +4,8 @@ namespace MessageEncoder.Contracts
 {
     public interface IApplication
     {
-        void Run(string[] args);
+        string Name { get; }
+
+        void Launch(string[] args);
     }
 }

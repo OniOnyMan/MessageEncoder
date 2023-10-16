@@ -5,9 +5,13 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 using MessageEncoder.Contracts;
+using MessageEncoder.Logging;
 
 namespace MessageEncoder.Applications
 {
+    /// <summary>
+    /// Вычитывает байт-текст из папки с файлами и сохраняет по указаному пути
+    /// </summary>
     public class TextToFile : IApplication
     {
         //private static readonly string InputRootPath = @"D:\Downloads\MessageEncoder\encoded [2023-10-14 08-56-01]";
@@ -34,7 +38,7 @@ namespace MessageEncoder.Applications
             Name = name;
         }
 
-        public void Run(string[] args)
+        public void Launch(string[] args)
         {
             if (string.IsNullOrWhiteSpace(InputRootPath)
                 || !Directory.Exists(InputRootPath))
